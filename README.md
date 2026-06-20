@@ -98,3 +98,4 @@ Run `:Telescope themes` to preview available themes.
 ## Plugin Manager
 
 Uses [lazy.nvim](https://github.com/folke/lazy.nvim) with lazy-loading enabled by default for fast startup. Run `:Lazy` to manage plugins.
+
