@@ -1,42 +1,80 @@
--- Load defaults i.e lua_lsp
+-- Loads NvChad's default LSP settings (on_attach, capabilities, lua_ls, etc.)
 require("nvchad.configs.lspconfig").defaults()
 
-local lspconfig = require "lspconfig"
-local nvlsp = require "nvchad.configs.lspconfig"
+local capabilities = require("nvchad.configs.lspconfig").capabilities
 
--- List of servers with default config
-local servers = { "html", "cssls", "clangd", "pyright"}
-
-for _, lsp in ipairs(servers) do
-  lspconfig[lsp].setup {
-    on_attach = nvlsp.on_attach,
-    on_init = nvlsp.on_init,
-    capabilities = nvlsp.capabilities,
-  }
-end
-
--- Configure jdtls (Java LSP) with auto-formatting
-lspconfig.jdtls.setup {
-  on_attach = function(client, bufnr)
-    nvlsp.on_attach(client, bufnr)
-
-    -- Enable formatting on save
-    if client.server_capabilities.documentFormattingProvider then
-      vim.api.nvim_create_autocmd("BufWritePre", {
-        buffer = bufnr,
-        callback = function()
-          vim.lsp.buf.format { async = false }
-        end,
-      })
+-- Attach nvim-navic to LSP clients so breadcrumbs (barbecue) work ---------
+vim.api.nvim_create_autocmd("LspAttach", {
+  callback = function(args)
+    local client = vim.lsp.get_client_by_id(args.data.client_id)
+    if client and client.server_capabilities.documentSymbolProvider then
+      local ok, navic = pcall(require, "nvim-navic")
+      if ok then
+        navic.attach(client, args.buf)
+      end
     end
   end,
-  on_init = nvlsp.on_init,
-  capabilities = nvlsp.capabilities,
-  cmd = { "jdtls" }, -- Ensure jdtls is in your PATH
-  root_dir = lspconfig.util.root_pattern("pom.xml", "build.gradle", ".git"),
+})
+
+-- Servers that just need the defaults -------------------------------------
+local servers = {
+  "pyright", -- Python (types)
+  "ruff", -- Python (lint/format LSP)
+  "clangd", -- C / C++
+  "cmake", -- CMake
+  "lua_ls", -- Lua (already enabled by defaults, harmless to repeat)
+  "ts_ls", -- JavaScript / TypeScript
+  "html",
+  "cssls",
+  "jsonls",
+  "yamlls",
+  "bashls",
+  "rust_analyzer",
+  "gopls",
+  "marksman", -- Markdown
+  "dockerls",
+  "taplo", -- TOML
+  -- NOTE: Java (jdtls) is intentionally NOT here. It is started per-buffer
+  -- by nvim-jdtls from ftplugin/java.lua.
 }
 
+-- Per-server tweaks (must be registered before enabling) ------------------
+vim.lsp.config("clangd", {
+  cmd = {
+    "clangd",
+    "--background-index",
+    "--clang-tidy",
+    "--header-insertion=iwyu",
+    "--completion-style=detailed",
+    "--function-arg-placeholders",
+    "--fallback-style=llvm",
+  },
+  init_options = {
+    usePlaceholders = true,
+    completeUnimported = true,
+    clangdFileStatus = true,
+  },
+})
 
+vim.lsp.config("pyright", {
+  settings = {
+    python = {
+      analysis = {
+        autoSearchPaths = true,
+        useLibraryCodeForTypes = true,
+        diagnosticMode = "openFilesOnly",
+      },
+    },
+  },
+})
 
+-- Let ruff handle lint/format only; let pyright own hover/definitions.
+vim.lsp.config("ruff", {
+  on_attach = function(client, _)
+    client.server_capabilities.hoverProvider = false
+  end,
+})
 
-
+-- Apply shared capabilities to everything, then enable.
+vim.lsp.config("*", { capabilities = capabilities })
+vim.lsp.enable(servers)

@@ -1,29 +1,48 @@
--- This file needs to have same structure as nvconfig.lua 
--- https://github.com/NvChad/ui/blob/v3.0/lua/nvconfig.lua
--- Please read that file to know all available options :( 
+-- This file controls the NvChad look & feel.
+-- Full list of options: https://github.com/NvChad/NvChad/blob/v2.5/lua/nvconfig.lua
 
 ---@type ChadrcConfig
 local M = {}
 
 M.base46 = {
-	theme = "vscode_dark",
+  -- Switch themes live at any time with <leader>th (theme picker).
+  -- Nice options: "jellybeans", "tokyonight", "onedark", "gruvchad",
+  -- "rosepine", "kanagawa", "everforest", "nord", "poimandres".
+  theme = "jellybeans",
 
-	-- hl_override = {
-	-- 	Comment = { italic = true },
-	-- 	["@comment"] = { italic = true },
-	-- },
+  -- transparency = true,  -- uncomment for a transparent background
+
+  -- Example override: make comments italic
+  hl_override = {
+    Comment = { italic = true },
+    ["@comment"] = { italic = true },
+  },
 }
 
 M.ui = {
-        theme = "vscode_dark",
-    transparency = false,
+  -- Completion menu look. Options: "default", "flat_light", "flat_dark",
+  -- "atom", "atom_colored".
+  cmp = {
+    style = "atom_colored",
+  },
+
+  statusline = {
+    -- "default", "vscode", "vscode_colored", "minimal"
+    theme = "vscode_colored",
+    separator_style = "round",
+  },
+
+  -- Buffer/tab line at the top
+  tabufline = {
+    enabled = true,
+    lazyload = true,
+    order = { "treeOffset", "buffers", "tabs", "btns" },
+  },
 }
 
--- M.nvdash = { load_on_startup = true }
--- M.ui = {
---       tabufline = {
---          lazyload = false
---      }
---}
+-- The pretty start screen
+M.nvdash = {
+  load_on_startup = true,
+}
 
 return M
